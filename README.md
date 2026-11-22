@@ -9,7 +9,7 @@
 ## Python-biblioteker
 
 ```bash
-python -m pip install eaps2000 pyvisa numpy pyserial
+python -m pip install eaps2000 pyvisa-py numpy pyserial
 ```
 
 ## Sådan bruges programmet
