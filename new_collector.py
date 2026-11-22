@@ -1,4 +1,5 @@
-from time import sleep, monotonic
+import sys
+from time import sleep
 
 # Importer biblioteker til at styre strømforsyning og Keithley sourcemeter
 from eaps2000 import eaps2k
@@ -54,40 +55,37 @@ k.write(":SENS:VOLT:RANG 0.2")
 k.write(":SENS:VOLT:NPLC 10")      # Langsomste mode; 200ms pr måling
 k.write(":FORM:ELEM VOLT")
 k.write(":OUTP ON")
- 
-CURRENT_TOL = 0.02
-POLL_INTERVAL = 0.05
-SETTLE_TIMEOUT = 2.0
 
-def wait_for_current(ps, target):
-    # Vent til strømforsyningen *faktisk* har nået den ønskede strøm (lorte strømforsyning)
-    deadline = monotonic() + SETTLE_TIMEOUT
-    while abs(ps.get_actual()['I'] - target) > CURRENT_TOL:
-        if monotonic() > deadline:
-            print(f"Advarsel: strømmen nåede ikke {target} A inden for {SETTLE_TIMEOUT} s")
-            break
-        sleep(POLL_INTERVAL)
+CURRENT_TOL = 0.01
+COMMAND_DELAY = 0.05  # min. tid mellem kommandoer ifølge PS2000B protokollen
+
+def set_current(ps, target):
+    ps.set_current(target)
+    sleep(COMMAND_DELAY)
+    actual = ps.get_actual()['I']
+    if abs(actual - target) > CURRENT_TOL:
+        sys.exit(f"Fejl: strømmen er {actual} A, forventede {target} A")
+    return actual
 
 with eaps2k('COM4') as ps:
+    cfg['Iset'] = 0.0
+    ps.configure(cfg)
+    # Tænd for strømforsyningen
+    ps.set_output_state(True)
+
     for I in I_space:
         print(I)
-        # Først, juster konfigurationen til den strøm vi er nået til
-        cfg['Iset'] = float(I)
-        # Skriv konfigurationen over i strømforsyningen
-        ps.configure(cfg)
-        # Tænd for strømforsyningen
-        ps.set_output_state(True)
-        wait_for_current(ps, float(I))
-        H_y = I*150*0.7155/0.1975
+        I_actual = set_current(ps, float(I))
+        H_y = I_actual*150*0.7155/0.1975
 
         # Læs fra Keithley, gem værdien som "sig"
         sig = float(k.query(":READ?"))
 
-        print("Coil current (A):\t", I)
+        print("Coil current (A):\t", I_actual)
         print("H_y [A/m]:\t\t", H_y)
         print("Signal [V]:\t\t", sig)
 
-        writer.writerow([I, H_y, sig])
+        writer.writerow([I_actual, H_y, sig])
         file.flush()
 
     # Negative værdier
@@ -95,26 +93,19 @@ with eaps2k('COM4') as ps:
 
     for I in I_space[1:]:
         print(I)
-        # Først, juster konfigurationen til den strøm vi er nået til
-        cfg['Iset'] = float(I)
-        # Skriv konfigurationen over i strømforsyningen
-        ps.configure(cfg)
-        # Tænd for strømforsyningen
-        ps.set_output_state(True)
-        wait_for_current(ps, float(I))
-        H_y = I*150*0.7155/0.1975
+        I_actual = set_current(ps, float(I))
+        H_y = I_actual*150*0.7155/0.1975
 
         # Læs fra Keithley
         sig = float(k.query(":READ?"))
 
-        print("Coil current (A):\t", -I)
+        print("Coil current (A):\t", -I_actual)
         print("H_y [A/m]:\t\t", H_y)
         print("Signal [V]:\t\t", sig)
 
-        writer.writerow([-I, -H_y, sig])
+        writer.writerow([-I_actual, -H_y, sig])
         file.flush()
 
     # Don't burn down the lab
     print("Setting PS to 0 [A]")
-    cfg['Iset'] = 0
-    ps.configure(cfg)
+    set_current(ps, 0.0)
