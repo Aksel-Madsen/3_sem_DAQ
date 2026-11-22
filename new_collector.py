@@ -30,7 +30,7 @@ I_1 = float(input("Upper Current limit "))
 N = int(input("Number of points "))
 
 # Lav et lineært rum mellem de to grænser for strømmen
-I_space = numpy.linspace(I_1, I_1, N)
+I_space = numpy.linspace(I_0, I_1, N)
 # Læg negative værdier til det rum
 I_space = numpy.concatenate((I_space, I_space[-2::-1]))
 
