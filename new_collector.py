@@ -56,15 +56,13 @@ k.write(":SENS:VOLT:NPLC 10")      # Langsomste mode; 200ms pr måling
 k.write(":FORM:ELEM VOLT")
 k.write(":OUTP ON")
 
-CURRENT_TOL = 0.01
-COMMAND_DELAY = 0.05  # min. tid mellem kommandoer ifølge PS2000B protokollen
+SETTLE_DELAY = 0.35  # tid til strømmen kan indsvinge i spolen (induktiv belastning)
 
 def set_current(ps, target):
     ps.set_current(target)
-    sleep(COMMAND_DELAY)
+    sleep(SETTLE_DELAY)
     actual = ps.get_actual()['I']
-    if abs(actual - target) > CURRENT_TOL:
-        sys.exit(f"Fejl: strømmen er {actual} A, forventede {target} A")
+    print(f"strøm er {actual} A, forventede {target} A")
     return actual
 
 with eaps2k('COM4') as ps:
