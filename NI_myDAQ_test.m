@@ -1,8 +1,8 @@
 %% Load data file
 data = readmatrix("data\test_7.csv");
-I_L = (data(:, 1));
+I_L = abs((data(:, 1)));
 H_y = (data(:, 2));
-sig = (data(:, 3));
+sig = abs((data(:, 3)));
 
 % Palette
 dotColor  = [0.55 0.71 0.86];

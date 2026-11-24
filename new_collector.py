@@ -38,8 +38,8 @@ I_space = numpy.concatenate((I_space, I_space[-2::-1]))
 # Initialiser en konfiguration til strømforsyningen
 cfg = eaps2k.get_config_template()
 cfg['ACK'] = True
-cfg['OVP'] = 10.0
-cfg['OCP'] = 5.0
+cfg['OVP'] = 40.0
+cfg['OCP'] = 10.0
 cfg['Vset'] = 20.0
 
 # Opsæt Keithley forbindelse
